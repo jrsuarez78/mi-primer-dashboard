@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moda Sofía — Dashboard de Ventas</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page:        #0d0d0d;
+    --surface:     #1a1a19;
+    --surface-2:   #202020;
+    --text-primary:   #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --grid:        #2c2c2a;
+    --baseline:    #383835;
+    --border:      rgba(255,255,255,0.10);
+    --series-1:    #3987e5;
+    --series-1-soft: rgba(57,135,229,0.16);
+    --good:        #0ca30c;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+  }
+
+  header.top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeSlideIn 0.5s ease-out forwards;
+  }
+
+  header.top h1 {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  header.top .brand-tag {
+    color: var(--series-1);
+    font-weight: 700;
+  }
+
+  header.top p {
+    margin: 4px 0 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+
+  header.top .date {
+    color: var(--text-muted);
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  /* ---- Stat cards ---- */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .card {
+    background: #12351f;
+    border: 1px solid rgba(12,163,12,0.45);
+    border-radius: 14px;
+    padding: 18px 20px;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeSlideIn 0.5s ease-out forwards;
+  }
+
+  .card:nth-child(1) { animation-delay: 0.05s; }
+  .card:nth-child(2) { animation-delay: 0.12s; }
+  .card:nth-child(3) { animation-delay: 0.19s; }
+  .card:nth-child(4) { animation-delay: 0.26s; }
+
+  .card .label {
+    color: var(--text-muted);
+    font-size: 12.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card .icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(12,163,12,0.22);
+    color: #4ade80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .card .icon svg { width: 16px; height: 16px; }
+
+  .card .value {
+    font-size: 26px;
+    font-weight: 700;
+    margin-top: 12px;
+    font-variant-numeric: normal;
+    letter-spacing: -0.01em;
+  }
+
+  .card .delta {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--good);
+    font-weight: 600;
+  }
+  .card .delta.neutral { color: var(--text-muted); font-weight: 500; }
+
+  /* ---- Panels ---- */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px 18px;
+    margin-bottom: 20px;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeSlideIn 0.55s ease-out forwards;
+  }
+  .panel.chart { animation-delay: 0.34s; }
+  .panel.table { animation-delay: 0.42s; }
+
+  .panel h2 {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 2px;
+  }
+  .panel .sub {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin: 0 0 18px;
+  }
+
+  /* ---- Chart ---- */
+  .chart-area {
+    position: relative;
+  }
+
+  .chart-area svg {
+    display: block;
+    width: 100%;
+    height: 240px;
+    overflow: visible;
+  }
+
+  .bar-rect {
+    fill: var(--series-1);
+    rx: 4px;
+    transform-origin: bottom;
+    transform: scaleY(0);
+    animation: growBar 0.6s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+
+  .bar-group:hover .bar-rect { fill: #5a9eec; }
+
+  .bar-group { cursor: pointer; }
+
+  .axis-label {
+    fill: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .grid-line {
+    stroke: var(--grid);
+    stroke-width: 1;
+  }
+
+  .baseline-line {
+    stroke: var(--baseline);
+    stroke-width: 1;
+  }
+
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12.5px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    transform: translate(-50%, -100%);
+    opacity: 0;
+    transition: opacity 0.12s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    z-index: 10;
+  }
+  .tooltip.show { opacity: 1; }
+  .tooltip .t-month { color: var(--text-muted); font-size: 11px; display: block; }
+  .tooltip .t-value { font-weight: 700; }
+
+  /* ---- Table ---- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  thead th {
+    text-align: left;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0 10px 10px;
+    border-bottom: 1px solid var(--grid);
+  }
+
+  thead th.num, tbody td.num { text-align: right; }
+
+  tbody td {
+    padding: 13px 10px;
+    border-bottom: 1px solid var(--grid);
+    color: var(--text-secondary);
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  tbody td.product { color: var(--text-primary); font-weight: 600; }
+  tbody td.amount {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  tbody tr {
+    opacity: 0;
+    transform: translateY(6px);
+    animation: fadeSlideIn 0.4s ease-out forwards;
+  }
+  tbody tr:nth-child(1) { animation-delay: 0.5s; }
+  tbody tr:nth-child(2) { animation-delay: 0.56s; }
+  tbody tr:nth-child(3) { animation-delay: 0.62s; }
+  tbody tr:nth-child(4) { animation-delay: 0.68s; }
+  tbody tr:nth-child(5) { animation-delay: 0.74s; }
+
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes growBar {
+    from { transform: scaleY(0); }
+    to   { transform: scaleY(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, tbody tr, .card, .panel, header.top, .bar-rect {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+
+  @media (max-width: 860px) {
+    .cards { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 520px) {
+    .cards { grid-template-columns: 1fr; }
+    table { font-size: 13px; }
+    thead th:nth-child(1), tbody td:nth-child(1) { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1><span class="brand-tag">Moda Sofía</span> · Dashboard de Ventas</h1>
+      <p>Resumen general de la tienda</p>
+    </div>
+    <div class="date" id="todayLabel"></div>
+  </header>
+
+  <section class="cards">
+    <div class="card">
+      <div class="label">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></span>
+        Ventas del mes
+      </div>
+      <div class="value">$67,450</div>
+      <div class="delta">▲ 14.2% vs. mes anterior</div>
+    </div>
+
+    <div class="card">
+      <div class="label">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16.5 8.5a3 3 0 1 1 0 0"/><path d="M15 14c2.6.3 4.5 2.1 4.5 5"/></svg></span>
+        Clientes nuevos
+      </div>
+      <div class="value">128</div>
+      <div class="delta">▲ 8 esta semana</div>
+    </div>
+
+    <div class="card">
+      <div class="label">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7L12 3 4 7v10l8 4 8-4z"/><path d="M4 7l8 4 8-4"/><path d="M12 11v10"/></svg></span>
+        Productos vendidos
+      </div>
+      <div class="value">342</div>
+      <div class="delta neutral">Este mes</div>
+    </div>
+
+    <div class="card">
+      <div class="label">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+        Ingresos totales
+      </div>
+      <div class="value">$892,340</div>
+      <div class="delta">▲ 9.6% este año</div>
+    </div>
+  </section>
+
+  <section class="panel chart">
+    <h2>Ventas de los últimos 6 meses</h2>
+    <p class="sub">Monto total facturado por mes (MXN)</p>
+    <div class="chart-area" id="chartArea">
+      <svg id="barChart" viewBox="0 0 600 240" preserveAspectRatio="none" aria-label="Gráfico de barras de ventas mensuales"></svg>
+      <div class="tooltip" id="tooltip">
+        <span class="t-month" id="ttMonth"></span>
+        <span class="t-value" id="ttValue"></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel table">
+    <h2>Últimas ventas</h2>
+    <p class="sub">Las 5 transacciones más recientes</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Producto</th>
+          <th>Cliente</th>
+          <th class="num">Monto</th>
+        </tr>
+      </thead>
+      <tbody id="salesTableBody"></tbody>
+    </table>
+  </section>
+
+</div>
+
+<script>
+  document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('es-MX', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+
+  const monthlySales = [
+    { month: 'May', value: 45200 },
+    { month: 'Jun', value: 52800 },
+    { month: 'Jul', value: 48600 },
+    { month: 'Ago', value: 61300 },
+    { month: 'Sep', value: 58900 },
+    { month: 'Oct', value: 67450 }
+  ];
+
+  const fmtMoney = n => '$' + n.toLocaleString('es-MX');
+
+  function renderChart() {
+    const svg = document.getElementById('barChart');
+    const W = 600, H = 240;
+    const padLeft = 10, padRight = 10, padTop = 16, padBottom = 28;
+    const plotW = W - padLeft - padRight;
+    const plotH = H - padTop - padBottom;
+    const max = Math.max(...monthlySales.map(d => d.value)) * 1.15;
+    const n = monthlySales.length;
+    const gap = 18;
+    const barW = (plotW - gap * (n - 1)) / n;
+
+    let svgHtml = '';
+
+    // gridlines (4 horizontal)
+    const gridSteps = 4;
+    for (let i = 0; i <= gridSteps; i++) {
+      const y = padTop + (plotH / gridSteps) * i;
+      svgHtml += `<line class="grid-line" x1="${padLeft}" y1="${y}" x2="${W - padRight}" y2="${y}" />`;
+    }
+
+    monthlySales.forEach((d, i) => {
+      const x = padLeft + i * (barW + gap);
+      const barH = (d.value / max) * plotH;
+      const y = padTop + (plotH - barH);
+      svgHtml += `
+        <g class="bar-group" data-month="${d.month}" data-value="${d.value}" data-x="${x + barW / 2}" data-y="${y}">
+          <rect x="${x}" y="${padTop}" width="${barW}" height="${plotH}" fill="transparent" />
+          <rect class="bar-rect" x="${x}" y="${y}" width="${barW}" height="${barH}" rx="4" style="animation-delay:${0.1 + i * 0.07}s; transform-origin: ${x + barW/2}px ${padTop + plotH}px;" />
+          <text class="axis-label" x="${x + barW / 2}" y="${H - 8}" text-anchor="middle">${d.month}</text>
+        </g>`;
+    });
+
+    svgHtml += `<line class="baseline-line" x1="${padLeft}" y1="${padTop + plotH}" x2="${W - padRight}" y2="${padTop + plotH}" />`;
+
+    svg.innerHTML = svgHtml;
+
+    const tooltip = document.getElementById('tooltip');
+    const ttMonth = document.getElementById('ttMonth');
+    const ttValue = document.getElementById('ttValue');
+    const chartArea = document.getElementById('chartArea');
+
+    svg.querySelectorAll('.bar-group').forEach(g => {
+      g.addEventListener('mouseenter', () => {
+        const month = g.dataset.month;
+        const value = Number(g.dataset.value);
+        const svgX = Number(g.dataset.x);
+        const svgY = Number(g.dataset.y);
+        const scaleX = chartArea.clientWidth / W;
+        const scaleY = chartArea.clientHeight / H;
+
+        ttMonth.textContent = month;
+        ttValue.textContent = fmtMoney(value);
+        tooltip.style.left = (svgX * scaleX) + 'px';
+        tooltip.style.top = (svgY * scaleY - 8) + 'px';
+        tooltip.classList.add('show');
+      });
+      g.addEventListener('mouseleave', () => {
+        tooltip.classList.remove('show');
+      });
+    });
+  }
+
+  const recentSales = [
+    { date: '17/10/2026', product: 'Vestido Floral Midi', customer: 'Ana Martínez', amount: 1250 },
+    { date: '16/10/2026', product: 'Blusa Seda Blanca',  customer: 'Carla Pérez',   amount: 890 },
+    { date: '15/10/2026', product: 'Pantalón Palazzo',   customer: 'Sofía Ramírez', amount: 1480 },
+    { date: '14/10/2026', product: 'Chaqueta Denim',     customer: 'Laura Gómez',   amount: 2100 },
+    { date: '13/10/2026', product: 'Falda Plisada',      customer: 'María López',   amount: 760 }
+  ];
+
+  function renderTable() {
+    const tbody = document.getElementById('salesTableBody');
+    tbody.innerHTML = recentSales.map(s => `
+      <tr>
+        <td>${s.date}</td>
+        <td class="product">${s.product}</td>
+        <td>${s.customer}</td>
+        <td class="num amount">${fmtMoney(s.amount)}</td>
+      </tr>
+    `).join('');
+  }
+
+  renderChart();
+  renderTable();
+  window.addEventListener('resize', renderChart);
+</script>
+</body>
+</html>
